@@ -1,3 +1,5 @@
+name: Build container and push to Docker Hub
+
 on:
   # schedule: []
   push:
