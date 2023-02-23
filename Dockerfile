@@ -40,7 +40,7 @@ RUN apt-get -y --no-install-recommends install \
     -o APT::AutoRemove::SuggestsImportant=false && \
     apt-get clean
 
-RUN pip3 install --no-cache-dir jinja2-cli
+RUN pip install --no-cache-dir --upgrade pip && pip3 install --no-cache-dir jinja2-cli boto3 requests
 
 RUN mkdir /opt/steam && useradd -r -d /opt/steam steam  && chown steam:steam /opt/steam
 
