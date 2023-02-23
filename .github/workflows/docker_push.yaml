@@ -2,7 +2,7 @@ name: Build container and push to Docker Hub
 
 on:
   schedule: 
-    - 0 0 * * *
+    - cron: 0 0 * * *
   push:
     branches:
       - main
