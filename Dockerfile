@@ -13,7 +13,8 @@ RUN apt-get -y --no-install-recommends install \
     jq \
     apt-transport-https \
     gnupg2 \
-    curl \
+    wget \
+    python3-pip \
     lsb-release \
     ca-certificates \
     lib32z1 \
@@ -39,14 +40,18 @@ RUN apt-get -y --no-install-recommends install \
     -o APT::AutoRemove::SuggestsImportant=false && \
     apt-get clean
 
+RUN pip3 install --no-cache-dir jinja2-cli
+
 RUN mkdir /opt/steam && useradd -r -d /opt/steam steam  && chown steam:steam /opt/steam
 
 USER steam
 WORKDIR /opt/steam
 
-RUN mkdir ./.steam
+RUN mkdir ./bin && mkdir ./.steam
 RUN /usr/games/steamcmd +login anonymous +quit
 
-ENV PATH=/usr/games:$PATH
+COPY ./scripts/ bin/
+
+ENV PATH=/opt/steam/bin:/usr/games:$PATH
 
 CMD [ "/bin/bash" ]
