@@ -12,7 +12,7 @@ from os.path import basename
 from pathlib import Path
 from functools import cached_property
 from urllib.parse import urlparse
-from typing import Generator, Any
+from typing import Generator, Any, BinaryIO
 from dataclasses import dataclass
 
 import boto3
@@ -37,9 +37,12 @@ class S3Path:
         return None
     
     @classmethod
-    def from_object(cls, bucket: str, object: dict):
-        return cls(bucket, object["Key"])
+    def from_object(cls, bucket: str, obj: dict):
+        return cls(bucket, obj["Key"])
     
+    def _from_object(self, obj: dict):
+        return self.from_object(self.bucket, obj)
+
     @property
     def _s3_kwargs(self):
         return {
@@ -48,10 +51,13 @@ class S3Path:
         }
 
     def ls(self, client) -> Generator["S3Path", Any, Any]:
-        paginator = client.paginator("list_objects_v2")
+        paginator = client.get_paginator("list_objects_v2")
   
-        for page in paginator.paginate(Bucket=self.bucket, Prefix=self.key):
-            yield from map(self.from_object, page["Contents"])
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=self.key.strip("/")):
+            yield from map(self._from_object, page["Contents"])
+
+    def get(self, client, fd: BinaryIO):
+        client.download_fileobj(self.bucket, self.key, fd)
     
     @property
     def url(self):
@@ -63,16 +69,7 @@ class RuntimeContext:
     map_location: S3Path
     target_dir: Path
     session: boto3.Session = boto3.Session()
-    
-    @classmethod
-    def from_urls(cls, map_url, config_url):
-        return cls(
-            S3Path.from_url(map_url),
-            S3Path.from_url(config_url),
-            Path.cwd().resolve(),
-            Path.home().resolve()
-        )
-    
+
     @cached_property
     def s3(self):
         return boto3.client("s3")
@@ -93,7 +90,7 @@ class RuntimeContext:
             with tmpfile.open("wb") as fd:
                 print(f"Downloading {archive_name} from {self.map_location.url}...")
                 obj.get(self.s3, fd)
-            with bz2.BZ2File(tmpfile) as bz2_fd, mapfile.open("rb") as bsp_fd:
+            with bz2.BZ2File(tmpfile) as bz2_fd, mapfile.open("wb") as bsp_fd:
                 print(f"Extracting {bsp_name} to {str(self.target_dir)}")
                 shutil.copyfileobj(bz2_fd, bsp_fd)
 
@@ -107,7 +104,7 @@ class RuntimeContext:
 def parse_args() -> RuntimeContext:
     s3_prefix_url = S3Path.from_url(sys.argv[1])
     target_path = Path(sys.argv[2]).resolve()
-    return RuntimeContext.from_urls(s3_prefix_url, target_path)
+    return RuntimeContext(s3_prefix_url, target_path)
 
 
 def main():
