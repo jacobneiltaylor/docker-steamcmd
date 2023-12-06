@@ -31,5 +31,3 @@ RUN /usr/games/steamcmd +login anonymous +quit
 COPY ./scripts/ bin/
 
 ENV PATH=/opt/steam/bin:/usr/games:$PATH
-
-CMD [ "/bin/bash" ]
