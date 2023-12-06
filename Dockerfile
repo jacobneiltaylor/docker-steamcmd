@@ -3,11 +3,8 @@ FROM --platform=amd64 jacobneiltaylor/docker-base:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CPU_MHZ=2500
 
-RUN echo steam steam/question select "I AGREE" | debconf-set-selections && echo steam steam/license note '' | debconf-set-selections
-
-RUN apt_pre.sh && apt-get -y --no-install-recommends install software-properties-common && add-apt-repository -y multiverse && dpkg --add-architecture i386 && apt-get update && apt-get -y --no-install-recommends upgrade
-
-RUN apt_pre.sh && \
+RUN echo steam steam/question select "I AGREE" | debconf-set-selections && echo steam steam/license note '' | debconf-set-selections && \
+    apt_pre.sh && \
     apt-get -y --no-install-recommends install software-properties-common && \
     add-apt-repository -y multiverse && \
     dpkg --add-architecture i386 && \
@@ -21,11 +18,9 @@ RUN apt_pre.sh && \
     libtinfo5:i386 \
     libcurl3-gnutls:i386 \
     libsdl2-2.0-0:i386 \
-    steamcmd && update-ca-certificates && apt_post.sh
-
-RUN pip install --no-cache-dir --upgrade pip && pip3 install --no-cache-dir jinja2-cli boto3 requests
-
-RUN mkdir /opt/steam && useradd -r -d /opt/steam steam  && chown steam:steam /opt/steam
+    steamcmd && update-ca-certificates && apt_post.sh && \
+    pip install --no-cache-dir --upgrade pip && pip3 install --no-cache-dir jinja2-cli boto3 requests && \
+    mkdir /opt/steam && useradd -r -d /opt/steam steam  && chown steam:steam /opt/steam
 
 USER steam
 WORKDIR /opt/steam
